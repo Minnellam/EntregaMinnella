@@ -1,6 +1,6 @@
 from django.db import models
 
-class Paciente(models.Model):
+class Pacientes(models.Model):  
     nombre = models.CharField(max_length=40)
     edad = models.IntegerField()
     diagnostico = models.CharField(max_length=40)
