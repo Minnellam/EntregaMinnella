@@ -6,6 +6,17 @@
     <title>Document</title>
 </head>
 <body>
-    
+    {% extends "app/padre.html" %}
+    {% load static %}
+    {% block contenidoQueCambia %}
+    <form action="" method="POST">
+        {% csrf_token %}
+       
+            {{ miFormulario.as_table }}
+        
+        <input type="submit" value="Registrar">
+    </form>
+
+    {% endblock %}
 </body>
 </html>

@@ -9,13 +9,18 @@
     {% extends "app/padre.html" %}
     {% load static %}
     {% block contenidoQueCambia %}
-    <form action="" method="POST">
-        {% csrf_token %}
-       
-            {{ miFormulario.as_table }}
-        
-        <input type="submit" value="Registrar">
-    </form>
+
+    <p>Estamos buscando el paciente: {{ nombre }}</p>
+
+    {% if nombre %}
+    <ul>
+    {% for nombre in paciente %}
+        <li>{{ nombre.nombre }}</li>
+        <li>{{ nombre.edad }}</li>
+        <li>{{ nombre.diagnostico }}</li>
+    {% endfor %}
+    </ul>
+    {% endif %} 
 
     {% endblock %}
 </body>

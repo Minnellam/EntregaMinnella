@@ -14,5 +14,8 @@ class formularioProfesional(forms.Form):
 class formularioLocalidad(forms.Form):
      ciudad = forms.CharField()
      provincia = forms.CharField()
-     cp = forms.EmailField()
+     cp = forms.IntegerField()
+
+class Buscar(forms.Form):
+    nombre = forms.CharField(max_length=20)     
     

@@ -10,5 +10,7 @@ urlpatterns = [
     path('crear_Pacientes/', views.crear_Pacientes, name='crear_Pacientes'),
     path('crear_Profesional/', views.crear_Profesional, name='crear_Profesional'),
     path('crear_Localidad/', views.crear_Localidad, name='crear_Localidad'),
+    path('busquedaPaciente/', views.busquedaPaciente, name='busquedaPaciente'),
+    path('buscar/', views.buscar),
     
         ]
