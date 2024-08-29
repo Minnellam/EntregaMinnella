@@ -22,6 +22,6 @@ from Proyecto.views import probando_template, agregar_profesional
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('plantilla/', probando_template),
-    path('App/', include('App.urls')),
+    path('', include('App.urls')),
     path('agregagar_profesional/<nom>/<ap>/<email>/<esp>/', agregar_profesional), #borrar es de prueba se carga por formulario
 ]

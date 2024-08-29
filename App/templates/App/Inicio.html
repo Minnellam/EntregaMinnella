@@ -9,10 +9,13 @@
 		<title>Strongly Typed by HTML5 UP</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="{%  static 'App/static/App/assets/css/main.css' %}" />
+		<link rel="stylesheet" href="{%  static 'App/css/main.css' %}" />
 		
 	</head>
 	<body class="homepage is-preload">
+		{% extends "app/padre.html" %}
+    	{% load static %}
+   		{% block contenidoQueCambia %}
 		<div id="page-wrapper">
 
 			<!-- Header -->
@@ -39,9 +42,7 @@
 					</div>
 				</section>
 				        <!-- Esto es lo que va a cambiar -->
-						{% block contenidoQueCambia %}
 						
-						{% endblock %}
 				
 			
 					<div id="copyright" class="container">
@@ -53,13 +54,8 @@
 
 		</div>
 
-		<!-- Scripts -->
-			<script src="assets/js/jquery.min.js"></script>
-			<script src="assets/js/jquery.dropotron.min.js"></script>
-			<script src="assets/js/browser.min.js"></script>
-			<script src="assets/js/breakpoints.min.js"></script>
-			<script src="assets/js/util.js"></script>
-			<script src="assets/js/main.js"></script>
+		
 
+		{% endblock %}
 	</body>
 </html>
