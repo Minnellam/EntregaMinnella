@@ -1,6 +1,6 @@
 # EntregaMinnella
 
-Se ingresa a whttp://127.0.0.1:8000/App/inicio/
+Se ingresa a whttp://127.0.0.1:8000
 
 se puede navegar en:
 Carga de paciente
