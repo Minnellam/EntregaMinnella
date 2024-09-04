@@ -9,10 +9,10 @@
 -->
 <html>
 	<head>
-		<title>Strongly Typed by HTML5 UP</title>
+		<title>{% block title %}GESTION EMPRESA SALUD{% endblock %}</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="{%  static 'PreEntregaMinnella/App/static/AppMinnella/assets/css/fontawesome-all.min.css' %}" />
+		<link rel="stylesheet" href="{% static 'App/assets/css/main.css' %}" />
 		
 	</head>
 	<body class="homepage is-preload">
@@ -43,22 +43,89 @@
 				</section>
 				        <!-- Esto es lo que va a cambiar -->
 						{% block contenidoQueCambia %}
-						
+						<section id="banner">
+							<div class="container">
+							  
+							  <h2>Con esta aplicación podrás gestionar íntegramente tu empresa de salud, desde el paciente hasta el profesional que lo asiste.</h2>
+							</div>
+						  </section>
+					  
+						  <section id="features">
+							<div class="container">
+							  <div class="row">
+								<div class="col-4">
+								  <span class="image fit"><img src="{% static 'App/images/versatil.jpg' %}" alt="" style="border-radius: 50%;" /></span>
+								  <h3>Versatil</h3>
+								  <p>Optimiza los tiempos y gestiona en tiempo real</p>   
+					  
+								</div>
+								<div class="col-4">
+								  <span class="image fit"><img src="{% static 'App/images/digital.jfif' %}" alt="" style="border-radius: 50%;" /></span>
+								  <h3>Digital</h3>
+								  <p>Para un mejor manejo de la información, no hay nada mejor que tener todo digitalizado, accesible en todo momento, desde cualquier lugar y un solo click! </p>   
+					  
+								</div>
+								<div class="col-4">
+								  <span class="image fit"><img src="{% static 'App/images/reduci.jfif' %}" alt="" style="border-radius: 50%;" /></span>
+								  <h3>Reducí Costos</h3>
+								  <p>Con este aplicativo vas a optimizar los recursos y reducir costos.</p>   
+					  
+								</div>
+							  </div>
+							</div>
+						  </section>
 						{% endblock %}
 				
 			
-					<div id="copyright" class="container">
-						<ul class="links">
-							<li>&copy; Untitled. All rights reserved.</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
-						</ul>
+					<!-- Footer -->
+				<footer id="footer">
+					<div class="container">
+						<div class="row gtr-200">
+							<div class="col-12">
+
+								<!-- About -->
+									<section>
+										<h2 class="major"><span>Proyecto Final CoderHouse</span></h2>
+										<p>
+											Este es mi proyecto final para la gestión de empresas de salud, es básico pero con la idea de ir realizando mejoras paulatinamente.
+											 Les dejo mas información de mis repositorios <a href="https://github.com/Minnellam">MiRepositorio</a>. 
+											 :)
+										</p>
+									</section>
+
+							</div>
+							<div class="col-12">
+
+								<!-- Contact -->
+									<section>
+										<h2 class="major"><span>Redes</span></h2>
+										<ul class="contact">
+											<li><a class="icon brands fa-facebook-f" href="https://www.facebook.com/"><span class="label">Facebook</span></a></li>
+											<li><a class="icon brands fa-twitter" href="https://x.com/"><span class="label">Twitter</span></a></li>
+											<li><a class="icon brands fa-instagram" href="https://www.instagram.com/"><span class="label">Instagram</span></a></li>
+											<li><a class="icon brands fa-linkedin-in" href="https://ar.linkedin.com/in/maximiliano-nahuel-minnella-992605122"><span class="label">Mi Linkedin</span></a></li>
+										</ul>
+									</section>
+
+							</div>
+						</div>
+
+						<!-- Copyright -->
+							<div id="copyright">
+								<ul class="menu">
+									<li>&copy; Untitled. All rights reserved</li><li>Design: <a href="http://html5up.net">HTML5 UP</a></li>
+								</ul>
+							</div>
+
 					</div>
-				</section>
+				</footer>
 
 		</div>
 
 		<!-- Scripts -->
 			<script src="assets/js/jquery.min.js"></script>
 			<script src="assets/js/jquery.dropotron.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
 			<script src="assets/js/browser.min.js"></script>
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>

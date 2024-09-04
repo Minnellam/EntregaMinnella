@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">   
+
+    <title>Base de datos Pacientes</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        tr:nth-child(even)   
+ {
+            background-color: #f2f2f2;
+        }
+
+        th {
+            background-color: #f4cd6b;
+            color: white;
+        }
+        .action-buttons {
+            text-align: left;
+        }
+
+        .action-buttons button {
+            padding: 5px 10px;
+            background-color: #f2c94e;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>   
+
+<body>
+    {% extends "app/padre.html" %}
+    {% load static %}
+    {% block contenidoQueCambia %}
+
+    <h1> Estos son los pacientes en nuestra base de datos</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Edad</th>
+                <th>Diagnóstico</th>
+                
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pacientes %}
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td>{{ p.edad }}</td>
+                    <td>{{ p.diagnostico }}</td>
+                    <td class="action-buttons">
+                        <a href="{% url 'crear_Pacientes' %}"><button>Agregar</button>
+                        <a href="{% url 'crear_Profesional'  %}"><button>Editar</button>
+                        <a href="{% url 'EliminarPaciente' p.nombre %}"><button>Borrar</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endblock %}
+</body>
+</html>

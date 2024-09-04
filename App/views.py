@@ -72,7 +72,7 @@ def buscar(request):
 
     if request.GET["nombre"]:
 
-        #respuesta = f"Estoy buscando la camada nro: {request.GET['camada']}"
+        
         nombre = request.GET['nombre']
        
         
@@ -86,3 +86,33 @@ def buscar(request):
 
     #No olvidar from django.http import HttpResponse
     return HttpResponse(respuesta)
+
+def leerPacientes(request):
+    
+    pacientes = Pacientes.objects.all()
+    contexto = {"pacientes": pacientes}
+    return render(request, "App/leerPacientes.html", contexto)
+
+def eliminarPaciente(request, paciente_nombre):
+    paciente = Pacientes.objects.get(nombre=paciente_nombre)
+    paciente.delete()
+    
+    pacientes = Pacientes.objects.all()
+    contexto = {"pacientes":pacientes}
+    
+    return render(request, "App/leerPacientes.html",contexto)
+
+def leerProfesion(request):
+    
+    profesional = Profesional.objects.all()
+    contexto = {"profesional": profesional}
+    return render(request, "App/leerProfesional.html", contexto)
+
+def eliminarProfesional(request, profesional_nombre):
+    profesional = Profesional.objects.get(nombre=profesional_nombre)
+    profesional.delete()
+    
+    profesional = Profesional.objects.all()
+    contexto = {"profesional":profesional}
+    
+    return render(request, "App/leerProfesional.html",contexto)

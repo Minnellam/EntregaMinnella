@@ -15,9 +15,9 @@
     {% if nombre %}
     <ul>
     {% for nombre in paciente %}
-        <li>{{ nombre.nombre }}</li>
-        <li>{{ nombre.edad }}</li>
-        <li>{{ nombre.diagnostico }}</li>
+        <li><strong>Nombre:</strong> {{ nombre.nombre }}</li>
+        <li><strong>Edad:</strong> {{ nombre.edad }}</li>
+        <li><strong>Sintoma:</strong> {{ nombre.diagnostico }}</li>
     {% endfor %}
     </ul>
     {% endif %} 

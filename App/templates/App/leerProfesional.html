@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">   
+
+    <title>Base de datos Pacientes</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        tr:nth-child(even)   
+ {
+            background-color: #f2f2f2;
+        }
+
+        th {
+            background-color: #f4cd6b;
+            color: white;
+        }
+        .action-buttons {
+            text-align: left;
+        }
+
+        .action-buttons button {
+            padding: 5px 10px;
+            background-color: #f2c94e;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>   
+
+<body>
+    {% extends "app/padre.html" %}
+    {% load static %}
+    {% block contenidoQueCambia %}
+
+    <h1> Estos son los profesionales de nuestra base de datos</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Email</th>
+                <th>Profesion</th>
+                
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in profesional %}
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td>{{ p.apellido }}</td>
+                    <td>{{ p.email }}</td>
+                    <td>{{ p.especialidad }}</td>
+                    <td class="action-buttons">
+                        <a href="{% url 'crear_Profesional' %}"><button>Agregar</button>
+                        <a href="{% url 'crear_Profesional'  %}"><button>Editar</button>
+                        <a href="{% url 'EliminarProfesional' p.nombre %}"><button>Borrar</button>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endblock %}
+</body>
+</html>
