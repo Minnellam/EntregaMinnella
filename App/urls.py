@@ -16,5 +16,5 @@ urlpatterns = [
     path('eliminarPaciente/<paciente_nombre>/', views.eliminarPaciente, name='EliminarPaciente'),
     path('leerProfesional/', views.leerProfesion, name='LeerProfesional'),
     path('eliminarProfesional/<profesional_nombre>/', views.eliminarProfesional, name='EliminarProfesional'),
-    
+    path("masSobreMi/", views.masSobreMi, name='MasSobreMi'),
         ]

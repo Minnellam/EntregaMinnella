@@ -78,6 +78,13 @@
 							<div class="container">
 							  
 							  <h2>Con esta aplicación podrás gestionar íntegramente tu empresa de salud, desde el paciente hasta el profesional que lo asiste.</h2>
+							  <button class="btn btn-primary" id="moreAboutMeButton">Más sobre mí</button>
+							  <script>
+								document.getElementById('moreAboutMeButton').addEventListener('click', function() {
+								  // Redirige a la URL con el nombre 'mas_sobre_mi'
+  									window.location.href = "{% url 'MasSobreMi' %}";
+								});
+							  </script>
 							</div>
 						  </section>
 					  

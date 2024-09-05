@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imagen Ovalada</title>
+    <style>
+        .imagen-ovalada {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+    </style>
+    
+</head>
+<body>
+    {% extends "app/padre.html" %}
+    {% load static %}
+    {% block contenidoQueCambia %}
+    <section id="acerca-de-mi"> <h2>Acerca de mí</h2>
+        <article>
+        <img src="{% static 'App/images/maxi.jpeg' %}" alt="Maximiliano" class="imagen-ovalada">
+        <p>
+            Soy Maximiliano, un apasionado por la eficiencia y la optimización de procesos. Con 33 años y una familia maravillosa, he dedicado gran parte de mi vida a impulsar el crecimiento de las empresas desde mi rol como Analista Administrativo en la ciudad de La Plata.
+        </p>
+        <p>
+            La búsqueda constante de nuevas herramientas y conocimientos me ha llevado a sumergirme en el apasionante mundo de la programación. Estoy convencido de que la tecnología es una aliada invaluable para alcanzar la excelencia en cualquier ámbito.
+        </p>
+        <p>
+            Cuando no estoy frente a la computadora, disfruto de los viajes y de compartir momentos inolvidables con mi familia en la playa. La vida es un constante aprendizaje, y cada experiencia me enriquece y me motiva a seguir adelante.
+        </p>
+        <p>La fecha y hora actual es: {{ fecha_hora }}</p>
+    </article>
+    
+</section>
+    {% endblock %}
+</body>
+</html>

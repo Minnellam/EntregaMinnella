@@ -3,9 +3,14 @@ from django.http import HttpResponse
 from App.models import Pacientes, Profesional, Localidades
 from App.forms import formularioLocalidad, formularioPacientes, formularioProfesional, Buscar
 from django.contrib.auth.decorators import login_required
+from datetime import datetime
 
 def inicio(req):
     return render(req, "App/padre.html")
+
+def masSobreMi(req):
+    ahora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    return render(req, "App/masSobreMi.html", {'fecha_hora': ahora})
 
 @login_required
 def crear_Pacientes(req):
