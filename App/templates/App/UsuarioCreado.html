@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+        a {
+          color: #337ab7;
+          text-decoration: none;
+          font-weight: bold;
+        }
+      
+        a:hover {
+          color: #23527c;
+          text-decoration: underline;
+          background-color: #f5f5f5;
+        }
+      </style>
+    <title>Registro Satisfactorio</title>
+</head>
+<body>
+    {% extends 'App/padre.html' %}
+
+    {% load static %}
+
+    {% block title %} Login {% endblock title %}
+
+    {% block contenidoQueCambia %}
+
+    <div class="container text-center">
+        <h2>¡Te has registrado exitosamente!</h2>
+        <h3>Ahora puedes iniciar sesión.</h3>
+        <li><a href="{% url 'inicio' %}" class="btn btn-primary">Ir a Inicio</a></li>
+        <li><a href="{% url 'Login' %}" class="btn btn-primary">Ingresar</a></li>
+    </div>
+    
+    {% endblock %}
+</body>
+</html>

@@ -23,6 +23,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('plantilla/', probando_template),
     path('', include('App.urls')),
-    #path('usuarios/', include('UsuariosApp.urls')),
+    path('users', include('users.urls')),
     path('agregagar_profesional/<nom>/<ap>/<email>/<esp>/', agregar_profesional), #borrar es de prueba se carga por formulario
 ]
