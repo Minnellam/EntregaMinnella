@@ -30,17 +30,47 @@
 							<nav id="nav">
 								<ul>
 									<li><a class="icon solid fa-home" href="{% url 'crear_Pacientes'%}"><span>Carga de paciente</span></a></li>
-									<li>
-										<a href="{% url 'crear_Profesional'%}" class="icon fa-chart-bar"><span>Carga de profesional</span></a>
+									
+									<li><a href="{% url 'crear_Profesional'%}" class="icon fa-chart-bar"><span>Carga de profesional</span></a></li>
 										
 									<li><a class="icon solid fa-cog" href="{% url 'crear_Localidad'%}"><span>Carga de Localidades</span></a></li>
 									<li><a class="icon solid fa-retweet" href="{% url 'busquedaPaciente'%}"><span>Buscar</span></a></li>
-									<li><a class="icon solid fa-sitemap" href="{% url 'Login'%}"><span>Ingresar</span></a></li>
-									<li><a class="icon solid fa-sitemap" href="{% url 'Register'%}"><span>Crear Cuenta</span></a></li>
-								</ul>
-							</nav>
+									<!-- <li><a class="icon solid fa-sitemap" href="{% url 'Login'%}"><span>Ingresar</span></a></li> -->
+									<!-- <li><a class="icon solid fa-sitemap" href="{% url 'Register'%}"><span>Crear Cuenta</span></a></li> -->
+								
+									{# DROPDOWN PARA LA CUENTA DE USUARIO #}
+									{% if request.user.is_authenticated %}
 
-					</div>
+										<img src="{{request.user.imagen.imagen.url}}" alt="" style="height: 50px;width: 50px;">
+										
+										<div class="dropdown">
+											<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+											{{ request.user.username }}
+											</button>
+											<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+												<li><a class="dropdown-item" href="{% url 'EditarPerfil' %}">Editar cuenta</a></li>
+												<li><a class="dropdown-item" href="{% url 'Logout' %}">Cerrar sesión</a></li>
+											</ul>
+										</div>
+		
+									{% else %}
+		
+										<div class="dropdown">
+											<button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+												Cuenta
+											</button>
+											<ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+												<li><a class="dropdown-item" href="{% url 'Login' %}">Inciar Sesión</a></li>
+												<li><a class="dropdown-item" href="{% url 'Register' %}">Crear cuenta</a></li>
+											</ul>
+										</div>
+									{% endif %}
+								</ul>
+							</div>
+						</div>
+						</nav>
+								</ul>
+						</div>
 				</section>
 				        <!-- Esto es lo que va a cambiar -->
 						{% block contenidoQueCambia %}

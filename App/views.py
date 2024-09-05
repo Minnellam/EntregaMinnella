@@ -2,20 +2,12 @@ from django.shortcuts import render, HttpResponse
 from django.http import HttpResponse
 from App.models import Pacientes, Profesional, Localidades
 from App.forms import formularioLocalidad, formularioPacientes, formularioProfesional, Buscar
+from django.contrib.auth.decorators import login_required
 
 def inicio(req):
     return render(req, "App/padre.html")
 
-#def Pacientes(req):
-    
-    return render(req, "App/Pacientes.html")
-
-#def Profesional(req):
-    return render(req, "App/Profesionales.html")
-
-#def Localidades(req):
-    return render(req, "App/Localidades.html")
-
+@login_required
 def crear_Pacientes(req):
 
   if req.method == "POST":  
@@ -34,6 +26,7 @@ def crear_Pacientes(req):
 
   return render(req, "App/crear_pacientes.html", {"miFormulario": miFormulario})
 
+@login_required
 def crear_Profesional(req):  
 
     if req.method == "POST":  # Si el formulario fue enviado
@@ -48,7 +41,7 @@ def crear_Profesional(req):
     else:   
         miFormulario = formularioProfesional()  # Creamos un formulario vacío para mostrarlo inicialmente
     return render(req, "App/crear_profesional.html", {"miFormulario": miFormulario})
-
+@login_required
 def crear_Localidad(req):  
 
     if req.method == "POST":  # Si el formulario fue enviado
@@ -64,6 +57,7 @@ def crear_Localidad(req):
         miFormulario = formularioLocalidad()  # Creamos un formulario vacío para mostrarlo inicialmente
     return render(req, "App/crear_Localidad.html", {"miFormulario": miFormulario})
 
+@login_required
 def busquedaPaciente(request):
      return render(request, "App/busquedaPaciente.html")
 

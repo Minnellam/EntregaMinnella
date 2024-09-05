@@ -31,8 +31,10 @@
     <div class="container text-center">
         <h2>¡Te has registrado exitosamente!</h2>
         <h3>Ahora puedes iniciar sesión.</h3>
-        <li><a href="{% url 'inicio' %}" class="btn btn-primary">Ir a Inicio</a></li>
-        <li><a href="{% url 'Login' %}" class="btn btn-primary">Ingresar</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'inicio' %}">Ir a inicio</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'Login' %}">Iniciar sesión</a></li>
+        <!-- <li><a href="{% url 'inicio' %}" class="btn btn-primary">Ir a Inicio</a></li> -->
+        <!-- <li><a href="{% url 'Login' %}" class="btn btn-primary">Ingresar</a></li> -->
     </div>
     
     {% endblock %}

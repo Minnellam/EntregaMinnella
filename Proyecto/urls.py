@@ -17,7 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from Proyecto.views import probando_template, agregar_profesional
-
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,3 +27,5 @@ urlpatterns = [
     path('users', include('users.urls')),
     path('agregagar_profesional/<nom>/<ap>/<email>/<esp>/', agregar_profesional), #borrar es de prueba se carga por formulario
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
