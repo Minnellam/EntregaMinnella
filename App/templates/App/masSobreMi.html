@@ -5,11 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Imagen Ovalada</title>
     <style>
+        
         .imagen-ovalada {
             width: 200px;
             height: 200px;
             border-radius: 50%;
             object-fit: cover;
+            
         }
     </style>
     
@@ -18,7 +20,8 @@
     {% extends "app/padre.html" %}
     {% load static %}
     {% block contenidoQueCambia %}
-    <section id="acerca-de-mi"> <h2>Acerca de mí</h2>
+    
+    <section id="acerca-de-mi"> <h2 style="text-align: center;">Acerca de mí</h2>
         <article>
         <img src="{% static 'App/images/maxi.jpeg' %}" alt="Maximiliano" class="imagen-ovalada">
         <p>
