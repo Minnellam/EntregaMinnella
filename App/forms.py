@@ -6,7 +6,7 @@ class formularioPacientes(forms.Form):
      nombre = forms.CharField()
      edad = forms.IntegerField()
      diagnostico = forms.CharField()
-     archivo = forms.FileField(required=False)
+     archivo = forms.FileField(required=True, error_messages={'required': 'Debes seleccionar un archivo.'})
 
 class formularioProfesional(forms.Form):
      nombre = forms.CharField()
