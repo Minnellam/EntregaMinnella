@@ -58,7 +58,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for p in profesional %}
+            {% for p in object_list %}
                 <tr>
                     <td>{{ p.nombre }}</td>
                     <td>{{ p.apellido }}</td>
@@ -66,7 +66,7 @@
                     <td>{{ p.especialidad }}</td>
                     <td class="action-buttons">
                         <a href="{% url 'crear_Profesional' %}"><button>Agregar</button>
-                        <a href="{% url 'crear_Profesional'  %}"><button>Editar</button>
+                        <a href="{% url 'editar_profesional' p.id  %}"><button>Editar</button>
                         <a href="{% url 'EliminarProfesional' p.nombre %}"><button>Borrar</button>
                     </td>
                 </tr>

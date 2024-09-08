@@ -16,18 +16,25 @@
 {% block title %} Login {% endblock title %}
 
 {% block contenidoQueCambia %}
-    
-<form action="" method="POST" enctype="multipart/form-data">
+<section id="banner">
+    <div class="container">
+        <h1 class="section-title">Editar datos personales</h1>
+        <p class="section-description">En esta sección puedes modificar tus datos y contraseña del sistema.</p>
+    </div>
+</section>
+
+<form class="form-container" action="" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <table>
+    <table class="form-table">
         {{ mi_form.as_table }}
     </table>
-    <a class="btn btn-primary" href="{% url 'CambiarPass' %}">Cambiar contraseña</a>
-    <input type="submit" value="Actualizar">
 
+    <div style="text-align: center;">
+        <button class="btn btn-primary" type="button" onclick="redirectToChangePassword('{% url 'CambiarPass' %}')">Cambiar contraseña</button>
+        <input type="submit" value="Actualizar">
+    </div>
 </form>
-
 {% endblock %}
 
 </body>

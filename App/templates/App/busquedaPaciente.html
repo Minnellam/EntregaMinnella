@@ -23,20 +23,27 @@
   {% load static %}
   {% block contenidoQueCambia %}
 
-  <div class="container search-container">
-    <h1 class="h1">Buscar Paciente</h1>
-    <p>Ingrese su nombre para ver si se encuentra en nuestra base de datos</p>
-    <div class="row justify-content-center">
-      <div class="col-md-6">
-        <form action="{% url 'buscar' %}" method="GET">
-          <div class="input-group">
-            <input type="string" name="nombre" id="nombre" class="form-control" placeholder="Nombre del paciente">
-            <button type="submit" class="btn btn-primary">Buscar</button>
-          </div>
-        </form>
-      </div>
+  <section id="banner">
+    <div class="container">
+        <h1 class="section-title">Buscar paciente</h1>
+        <p class="section-description">En esta sección debes ingresar el nombre del paciente para cotejar si se encuentra en nuestra base de datos.</p>
+    </div>
+</section>
+
+<h2 style="text-align: center;">Completar aqui:</h2>
+<div class="container search-container">
+ 
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <form class="search-form" action="{% url 'buscar' %}" method="GET">
+        <div class="input-group">
+          <input type="string" name="nombre" id="nombre" class="form-control" placeholder="Nombre del paciente">
+          <button type="submit" class="btn btn-primary">Buscar</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
   {% endblock %}
 </body>

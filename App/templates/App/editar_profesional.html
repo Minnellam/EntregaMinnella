@@ -25,7 +25,7 @@
     {% block contenidoQueCambia %}
     <section id="banner">
         <div class="container">
-            <h1 class="section-title">Ingresar paciente</h1>
+            <h1 class="section-title">Ingresar profesional</h1>
             <p class="section-description">En esta sección debes ingresar los datos básicos.</p>
         </div>
     </section>
@@ -39,12 +39,12 @@
             <h2 class="form-header">Completar aquí:</h2>
     
             <table class="form-table">
-              {{ miFormulario.as_table }}
+                {% csrf_token %}
+                {{ form.as_p }}
             </table>
     
             <div class="form-actions text-center">
-              <button type="submit" class="btn btn-primary">Registrar</button>
-              <button type="button" class="btn btn-primary" onclick="window.location.href='http://127.0.0.1:8000/leerPacientes/'">Ir a Pacientes</button>
+              <button type="submit" class="btn btn-primary">Guardar</button>
             </div>
           </form>
         </div>

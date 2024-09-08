@@ -45,13 +45,14 @@
     {% load static %}
     {% block contenidoQueCambia %}
 
-    <h1> Estos son los pacientes en nuestra base de datos</h1>
+    <h1> Estos son los profesionales de nuestra base de datos</h1>
     <table>
         <thead>
             <tr>
-                <th>Nombre</th>
-                <th>Edad</th>
-                <th>Diagnóstico</th>
+                <th>Ciudad</th>
+                <th>Provincia</th>
+                <th>CP</th>
+                
                 
                 <th>Acciones</th>
             </tr>
@@ -59,14 +60,14 @@
         <tbody>
             {% for p in object_list %}
                 <tr>
-                    <td>{{ p.nombre }}</td>
-                    <td>{{ p.edad }}</td>
-                    <td>{{ p.diagnostico }}</td>
-                    <td>{{ p.archivo }}</td>
+                    <td>{{ p.ciudad }}</td>
+                    <td>{{ p.provincia }}</td>
+                    <td>{{ p.cp }}</td>
+                    
                     <td class="action-buttons">
-                        <a href="{% url 'crear_Pacientes' %}"><button>Agregar</button>
-                        <a href="{% url 'editar_paciente' p.id %}"><button>Editar</button>
-                        <a href="{% url 'EliminarPaciente' p.nombre %}"><button>Borrar</button>
+                        <a href="{% url 'crear_Localidad' %}"><button>Agregar</button>
+                        <a href="{% url 'editar_Localidad' p.id  %}"><button>Editar</button>
+                        <a href="{% url 'borrar_localidad' p.id %}"><button>Borrar</button>
                     </td>
                 </tr>
             {% endfor %}
