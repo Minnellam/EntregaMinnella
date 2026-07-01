@@ -73,8 +73,8 @@ fvgMinPips = input.float(3.0, "Tamaño mínimo del FVG (pips)", minval = 0, grou
 // --- Entrada -------------------------------------------------------------------
 OPT_LIMITE = "Límite en 50% del FVG"
 OPT_MERCADO = "Mercado al cierre de la vela de rechazo"
-tipoEntrada = input.string(OPT_LIMITE, "Tipo de entrada", options = [OPT_LIMITE, OPT_MERCADO],
-     group = "Entrada")
+tipoEntrada = input.string(OPT_LIMITE, "Tipo de entrada",
+     options = ["Límite en 50% del FVG", "Mercado al cierre de la vela de rechazo"], group = "Entrada")
 
 // --- Riesgo ----------------------------------------------------------------
 bufferStopPips = input.float(3.0, "Buffer del stop (pips) sobre la mecha del barrido", minval = 0,
