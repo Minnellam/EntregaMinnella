@@ -1,0 +1,490 @@
+//@version=5
+// =============================================================================
+// Judas Swing / Liquidity Sweep - Sesión de Nueva York (EUR/USD)
+// -----------------------------------------------------------------------------
+// Estrategia basada en el modelo ICT "Judas Swing":
+//   1) Barrido (sweep) de liquidez sobre PDH/PDL (o rango Asia+Londres) dentro
+//      de la killzone de NY.
+//   2) Cambio de estructura de mercado (MSS) en una temporalidad menor.
+//   3) Fair Value Gap (FVG) generado por el impulso del MSS.
+//   4) Entrada al retroceso sobre el FVG con confirmación de rechazo.
+//   5) Gestión de riesgo fija por % de capital y filtro de R:R mínimo.
+//
+// El guion está pensado para NO repintar: toda la lógica de decisión se
+// evalúa únicamente sobre barras cerradas (barstate.isconfirmed) y los
+// niveles diarios se obtienen con la técnica estándar sin lookahead.
+//
+// IMPORTANTE: request.security_lower_tf() exige que la temporalidad menor
+// (tfMenor) sea inferior a la temporalidad del gráfico en el que se aplica
+// el script. Usar este script en gráficos de 5 min o 15 min, por ejemplo,
+// con una temporalidad menor de 3 min o 1 min.
+// =============================================================================
+strategy(
+     title                = "Judas Swing / Liquidity Sweep - NY Session (EURUSD)",
+     shorttitle           = "JudasSwing-LS",
+     overlay               = true,
+     initial_capital       = 1000,
+     currency              = currency.USD,
+     default_qty_type      = strategy.fixed,
+     default_qty_value     = 0,
+     commission_type       = strategy.commission.percent,
+     commission_value      = input.float(0.005, "Comisión (%) por operación", group = "Backtest", step = 0.001),
+     slippage               = input.int(3, "Slippage (ticks)", group = "Backtest", minval = 0),
+     pyramiding             = 0,
+     calc_on_every_tick     = false,
+     process_orders_on_close = true,
+     max_lines_count        = 300,
+     max_labels_count       = 300,
+     max_boxes_count         = 300)
+
+// =============================================================================
+// INPUTS
+// =============================================================================
+
+// --- Niveles de referencia ---------------------------------------------------
+usarRangoAsiaLondres = input.bool(false, "Usar rango Asia+Londres (00:00-07:00 NY) en vez de PDH/PDL",
+     group = "Niveles de referencia")
+sesionAsiaLondres = input.session("0000-0700", "Sesión Asia+Londres (referencia opcional)",
+     group = "Niveles de referencia")
+
+// --- Ventana de sesión (killzone NY) -----------------------------------------
+sesionKillzone = input.session("0700-1100", "Killzone NY (rango total, válido para el setup)",
+     group = "Ventana de sesión")
+sesionPrimaria = input.session("0930-1000", "Ventana primaria (apertura NY, gatillo principal)",
+     group = "Ventana de sesión")
+sesionSecundaria = input.session("1000-1100", "Ventana secundaria (Silver Bullet)",
+     group = "Ventana de sesión")
+zonaHoraria = "America/New_York"
+
+// --- Temporalidad menor / MSS -------------------------------------------------
+tfMenor = input.timeframe("3", "Temporalidad menor para el MSS", group = "MSS (temporalidad menor)")
+pivoteLookback = input.int(5, "Barras izquierda/derecha para pivote menor", minval = 2,
+     group = "MSS (temporalidad menor)")
+atrLongitud = input.int(14, "Longitud ATR (temporalidad menor)", minval = 1,
+     group = "MSS (temporalidad menor)")
+atrMultiplo = input.float(1.2, "Múltiplo ATR mínimo para validar el MSS", minval = 0.1, step = 0.1,
+     group = "MSS (temporalidad menor)")
+
+// --- Fair Value Gap -----------------------------------------------------------
+pipSize = input.float(0.0001, "Tamaño de 1 pip (ajustar según el bróker)", step = 0.00001,
+     group = "Fair Value Gap")
+fvgMinPips = input.float(3.0, "Tamaño mínimo del FVG (pips)", minval = 0, group = "Fair Value Gap")
+
+// --- Entrada -------------------------------------------------------------------
+OPT_LIMITE = "Límite en 50% del FVG"
+OPT_MERCADO = "Mercado al cierre de la vela de rechazo"
+tipoEntrada = input.string(OPT_LIMITE, "Tipo de entrada", options = [OPT_LIMITE, OPT_MERCADO],
+     group = "Entrada")
+
+// --- Riesgo ----------------------------------------------------------------
+bufferStopPips = input.float(3.0, "Buffer del stop (pips) sobre la mecha del barrido", minval = 0,
+     group = "Riesgo")
+minRR = input.float(2.0, "R:R mínimo requerido (1:X)", minval = 0.1, step = 0.1, group = "Riesgo")
+riesgoPorc = input.float(1.0, "Riesgo por operación (% del capital)", minval = 0.01, step = 0.1,
+     group = "Riesgo")
+permitirDosOperaciones = input.bool(false, "Permitir 2 operaciones por día (en vez de 1)", group = "Riesgo")
+maxOperacionesDia = permitirDosOperaciones ? 2 : 1
+
+// --- Backtest ------------------------------------------------------------------
+fechaInicio = input.time(timestamp("2020-01-01 00:00 +0000"), "Fecha inicio backtest", group = "Backtest")
+fechaFin = input.time(timestamp("2099-12-31 23:59 +0000"), "Fecha fin backtest", group = "Backtest")
+
+// =============================================================================
+// PASO 0: NIVELES DE REFERENCIA (PDH/PDL o rango Asia+Londres)
+// =============================================================================
+
+// PDH/PDL diario, sin repintado: se pide el high[1]/low[1] en contexto diario
+// con lookahead_off, de forma que dentro del día en curso el valor ya está
+// fijado (corresponde siempre al día anterior completo).
+f_pdhpdl() =>
+    [h, l] = request.security(syminfo.tickerid, "D", [high[1], low[1]], lookahead = barmerge.lookahead_off)
+    [h, l]
+
+[pdh, pdl] = f_pdhpdl()
+
+// Rango Asia+Londres (00:00-07:00 NY): acumulador manual que se reinicia al
+// comenzar la sesión y queda "congelado" al finalizar, hasta el día siguiente.
+inAsiaLondres = not na(time(timeframe.period, sesionAsiaLondres, zonaHoraria))
+
+f_rangoAsiaLondres(enSesion) =>
+    var float altoSesion = na
+    var float bajoSesion = na
+    inicioSesion = enSesion and not enSesion[1]
+    if inicioSesion
+        altoSesion := high
+        bajoSesion := low
+    else if enSesion
+        altoSesion := math.max(altoSesion, high)
+        bajoSesion := math.min(bajoSesion, low)
+    [altoSesion, bajoSesion]
+
+[alHigh, alLow] = f_rangoAsiaLondres(inAsiaLondres)
+
+// Nivel de referencia final usado por el resto de la estrategia
+refAlto = usarRangoAsiaLondres ? alHigh : pdh
+refBajo = usarRangoAsiaLondres ? alLow : pdl
+
+plot(refAlto, title = "Nivel alto de referencia (PDH / Rango)", color = color.red,
+     style = plot.style_stepline, linewidth = 1)
+plot(refBajo, title = "Nivel bajo de referencia (PDL / Rango)", color = color.green,
+     style = plot.style_stepline, linewidth = 1)
+
+// =============================================================================
+// VENTANA DE SESIÓN (killzone NY con horario de verano correcto)
+// =============================================================================
+enKillzone = not na(time(timeframe.period, sesionKillzone, zonaHoraria))
+enVentanaPrimaria = not na(time(timeframe.period, sesionPrimaria, zonaHoraria))
+enVentanaSecundaria = not na(time(timeframe.period, sesionSecundaria, zonaHoraria))
+
+bgcolor(enVentanaPrimaria ? color.new(color.blue, 85) :
+         enVentanaSecundaria ? color.new(color.purple, 85) :
+         enKillzone ? color.new(color.gray, 90) : na,
+     title = "Killzone NY")
+
+// =============================================================================
+// DATOS DE LA TEMPORALIDAD MENOR (para MSS y FVG)
+// =============================================================================
+ltfOpenArr  = request.security_lower_tf(syminfo.tickerid, tfMenor, open)
+ltfHighArr  = request.security_lower_tf(syminfo.tickerid, tfMenor, high)
+ltfLowArr   = request.security_lower_tf(syminfo.tickerid, tfMenor, low)
+ltfCloseArr = request.security_lower_tf(syminfo.tickerid, tfMenor, close)
+ltfTimeArr  = request.security_lower_tf(syminfo.tickerid, tfMenor, time)
+ltfATRArr   = request.security_lower_tf(syminfo.tickerid, tfMenor, ta.atr(atrLongitud))
+
+// Advertencia visual si la temporalidad menor no es realmente menor a la del gráfico
+if barstate.islast and timeframe.in_seconds(tfMenor) >= timeframe.in_seconds(timeframe.period)
+    label.new(bar_index, high, text = "ADVERTENCIA: la temporalidad menor debe ser inferior a la del gráfico",
+         color = color.red, textcolor = color.white, style = label.style_label_down, size = size.small)
+
+// Histórico persistente de velas de la temporalidad menor (acotado en tamaño)
+var float[] histHigh  = array.new_float(0)
+var float[] histLow   = array.new_float(0)
+var float[] histClose = array.new_float(0)
+var float[] histOpen  = array.new_float(0)
+var int[]   histTime  = array.new_int(0)
+var float[] histATR   = array.new_float(0)
+
+// Acumula las velas nuevas de la temporalidad menor en los arreglos persistentes.
+// Los arreglos se pasan por referencia (se mutan "in place"), función testeable
+// de forma aislada dado un set de arreglos origen/destino.
+f_acumularLTF(destHigh, destLow, destClose, destOpen, destTime, destATR,
+     srcHigh, srcLow, srcClose, srcOpen, srcTime, srcATR, maxBarras) =>
+    n = array.size(srcHigh)
+    if n > 0
+        for i = 0 to n - 1
+            array.push(destHigh, array.get(srcHigh, i))
+            array.push(destLow, array.get(srcLow, i))
+            array.push(destClose, array.get(srcClose, i))
+            array.push(destOpen, array.get(srcOpen, i))
+            array.push(destTime, array.get(srcTime, i))
+            array.push(destATR, array.get(srcATR, i))
+    while array.size(destHigh) > maxBarras
+        array.shift(destHigh)
+        array.shift(destLow)
+        array.shift(destClose)
+        array.shift(destOpen)
+        array.shift(destTime)
+        array.shift(destATR)
+
+// Detecta pivote alto/bajo confirmado (equivalente manual a ta.pivothigh/pivotlow)
+// sobre el histórico de la temporalidad menor. Función pura, sin efectos laterales.
+f_detectarPivotes(arrHigh, arrLow, lookback) =>
+    n = array.size(arrHigh)
+    float pivoteAlto = na
+    float pivoteBajo = na
+    if n >= (2 * lookback + 1)
+        idx = n - lookback - 1
+        candidatoAlto = array.get(arrHigh, idx)
+        candidatoBajo = array.get(arrLow, idx)
+        esPivoteAlto = true
+        esPivoteBajo = true
+        for j = idx - lookback to idx + lookback
+            if j != idx
+                if array.get(arrHigh, j) >= candidatoAlto
+                    esPivoteAlto := false
+                if array.get(arrLow, j) <= candidatoBajo
+                    esPivoteBajo := false
+        if esPivoteAlto
+            pivoteAlto := candidatoAlto
+        if esPivoteBajo
+            pivoteBajo := candidatoBajo
+    [pivoteAlto, pivoteBajo]
+
+// =============================================================================
+// PASO 1: BARRIDO (SWEEP) DE LIQUIDEZ
+// =============================================================================
+// Función pura y testeable: dado el nivel alto/bajo de referencia y la vela
+// actual (contexto del gráfico principal), determina si hubo un Judas Swing.
+// Devuelve [barridoAlcista, barridoBajista] donde:
+//   - barridoAlcista = true  -> se barrió el mínimo (PDL) y cerró adentro -> setup LONG
+//   - barridoBajista = true  -> se barrió el máximo (PDH) y cerró adentro -> setup SHORT
+f_detectarBarrido(alto, bajo, activo) =>
+    bool barridoAlcista = false
+    bool barridoBajista = false
+    if activo and not na(alto) and not na(bajo)
+        if high > alto and close < alto
+            barridoBajista := true
+        if low < bajo and close > bajo
+            barridoAlcista := true
+    [barridoAlcista, barridoBajista]
+
+// =============================================================================
+// PASO 2: MARKET STRUCTURE SHIFT (MSS) EN TEMPORALIDAD MENOR
+// =============================================================================
+// Función pura y testeable: recorre el histórico de la temporalidad menor
+// desde "desdeIdx" buscando el cierre que rompe el pivote de referencia en
+// sentido contrario al barrido, con cuerpo >= atrMultiplo * ATR de esa vela.
+f_detectarMSS(direccionAlcista, refPivote, desdeIdx, arrClose, arrOpen, arrATR, multiploATR) =>
+    bool confirmado = false
+    float precioConfirmacion = na
+    int idxConfirmacion = na
+    n = array.size(arrClose)
+    int nuevoDesdeIdx = desdeIdx
+    if not na(refPivote) and n > desdeIdx
+        for i = desdeIdx to n - 1
+            if not confirmado
+                c = array.get(arrClose, i)
+                o = array.get(arrOpen, i)
+                atrVal = array.get(arrATR, i)
+                cuerpo = math.abs(c - o)
+                condicion = direccionAlcista ?
+                     (c > refPivote and cuerpo >= multiploATR * atrVal) :
+                     (c < refPivote and cuerpo >= multiploATR * atrVal)
+                if condicion
+                    confirmado := true
+                    precioConfirmacion := c
+                    idxConfirmacion := i
+        nuevoDesdeIdx := n
+    [confirmado, precioConfirmacion, idxConfirmacion, nuevoDesdeIdx]
+
+// =============================================================================
+// PASO 3: FAIR VALUE GAP (FVG) DEL MOVIMIENTO DE MSS
+// =============================================================================
+// Función pura y testeable: dado el índice de la vela de confirmación del MSS
+// (vela2, la de impulso), evalúa el FVG entre la vela anterior (vela1) y la
+// vela siguiente (vela3) una vez que esta última ya cerró.
+f_detectarFVG(idxConfirm, alcista, arrHigh, arrLow, minPips, tamPip) =>
+    bool valido = false
+    float top = na
+    float bottom = na
+    n = array.size(arrHigh)
+    if not na(idxConfirm) and idxConfirm >= 1 and n > idxConfirm + 1
+        h1 = array.get(arrHigh, idxConfirm - 1)
+        l1 = array.get(arrLow, idxConfirm - 1)
+        h3 = array.get(arrHigh, idxConfirm + 1)
+        l3 = array.get(arrLow, idxConfirm + 1)
+        if alcista and h1 < l3
+            top := l3
+            bottom := h1
+        if not alcista and l1 > h3
+            top := l1
+            bottom := h3
+        if not na(top)
+            tamPips = (top - bottom) / tamPip
+            if tamPips >= minPips
+                valido := true
+    [valido, top, bottom]
+
+// =============================================================================
+// PASO 4: ENTRADA (retroceso + toque de FVG + vela de rechazo)
+// =============================================================================
+// Función pura y testeable: evalúa, sobre la vela actual (ya cerrada), si el
+// precio tocó la zona del FVG y si la vela cerró confirmando el rechazo en
+// la dirección del MSS.
+f_gestionEntrada(direccionAlcista, top, bottom) =>
+    bool disparo = false
+    if not na(top) and not na(bottom)
+        tocoZona = direccionAlcista ? (low <= top and high >= bottom) : (high >= bottom and low <= top)
+        rechazo = direccionAlcista ? (close > open and close > bottom) : (close < open and close < top)
+        disparo := tocoZona and rechazo
+    disparo
+
+// =============================================================================
+// PASO 5: TAMAÑO DE POSICIÓN (riesgo fijo en % de capital)
+// =============================================================================
+f_calcularTamano(riesgoCapital, distanciaRiesgo) =>
+    distanciaRiesgo > 0 ? riesgoCapital / distanciaRiesgo : na
+
+// =============================================================================
+// MÁQUINA DE ESTADOS PRINCIPAL
+// =============================================================================
+ESTADO_ESPERANDO_BARRIDO = 0
+ESTADO_ESPERANDO_MSS      = 1
+ESTADO_ESPERANDO_FVG      = 2
+ESTADO_ESPERANDO_ENTRADA  = 3
+ESTADO_FINALIZADO_DIA     = 4
+
+var int estado = ESTADO_ESPERANDO_BARRIDO
+var bool barridoAlcista = na
+var float barridoExtremo = na          // extremo de la mecha del barrido (para el stop)
+var float pivoteRef = na               // swing point de referencia para el MSS
+var int mssIdxDesde = 0                // puntero de avance para no re-escanear el histórico
+var int idxConfirmMSS = na
+var float fvgTop = na
+var float fvgBottom = na
+var box   fvgBox = na
+var int   operacionesHoy = 0
+var string idPendiente = na
+
+var line lineaEntrada = na
+var line lineaStop = na
+var line lineaTP = na
+
+var float ultimoPivoteAlto = na
+var float ultimoPivoteBajo = na
+
+dentroDeFechas = time >= fechaInicio and time <= fechaFin
+
+// Banderas de alerta (se resetean cada barra, se activan dentro del bloque de decisión)
+sweepFlag = false
+mssFlag = false
+entryFlag = false
+
+// Toda la lógica de decisión corre únicamente sobre barra cerrada -> sin repintado
+if barstate.isconfirmed
+    // --- Acumulación de datos de temporalidad menor y detección de pivotes ---
+    f_acumularLTF(histHigh, histLow, histClose, histOpen, histTime, histATR,
+         ltfHighArr, ltfLowArr, ltfCloseArr, ltfOpenArr, ltfTimeArr, ltfATRArr, 2000)
+
+    [pA, pB] = f_detectarPivotes(histHigh, histLow, pivoteLookback)
+    if not na(pA)
+        ultimoPivoteAlto := pA
+    if not na(pB)
+        ultimoPivoteBajo := pB
+
+    // --- Reinicio diario (hora de Nueva York) ---
+    diaActualNY = dayofmonth(time, zonaHoraria)
+    nuevoDia = diaActualNY != diaActualNY[1]
+    if nuevoDia
+        operacionesHoy := 0
+        estado := ESTADO_ESPERANDO_BARRIDO
+        fvgTop := na
+        fvgBottom := na
+
+    // --- Invalidación por fin de killzone o por ruptura del nivel de stop ---
+    if estado == ESTADO_ESPERANDO_MSS or estado == ESTADO_ESPERANDO_FVG or estado == ESTADO_ESPERANDO_ENTRADA
+        rupturaInvalida = barridoAlcista ?
+             (low < barridoExtremo - bufferStopPips * pipSize) :
+             (high > barridoExtremo + bufferStopPips * pipSize)
+        if (not enKillzone) or rupturaInvalida
+            if not na(idPendiente)
+                strategy.cancel(idPendiente)
+                idPendiente := na
+            estado := ESTADO_ESPERANDO_BARRIDO
+            fvgTop := na
+            fvgBottom := na
+
+    // --- PASO 1: barrido ---
+    if estado == ESTADO_ESPERANDO_BARRIDO and enKillzone
+        [su, sd] = f_detectarBarrido(refAlto, refBajo, enKillzone)
+        if su or sd
+            barridoAlcista := su
+            barridoExtremo := su ? low : high
+            pivoteRef := su ? ultimoPivoteAlto : ultimoPivoteBajo
+            mssIdxDesde := array.size(histClose)
+            idxConfirmMSS := na
+            estado := ESTADO_ESPERANDO_MSS
+            sweepFlag := true
+            label.new(bar_index, su ? low : high,
+                 text = "Barrido " + (su ? "PDL" : "PDH"),
+                 style = su ? label.style_label_up : label.style_label_down,
+                 color = color.fuchsia, textcolor = color.white, size = size.small)
+
+    // --- PASO 2: MSS ---
+    if estado == ESTADO_ESPERANDO_MSS
+        [mssOk, precioMSS, idxMSS, nuevoDesde] = f_detectarMSS(
+             barridoAlcista, pivoteRef, mssIdxDesde, histClose, histOpen, histATR, atrMultiplo)
+        mssIdxDesde := nuevoDesde
+        if mssOk
+            idxConfirmMSS := idxMSS
+            estado := ESTADO_ESPERANDO_FVG
+            mssFlag := true
+            label.new(bar_index, precioMSS, text = "MSS",
+                 style = barridoAlcista ? label.style_label_up : label.style_label_down,
+                 color = color.blue, textcolor = color.white, size = size.small)
+
+    // --- PASO 3: FVG ---
+    if estado == ESTADO_ESPERANDO_FVG
+        [fvgOk, top, bottom] = f_detectarFVG(idxConfirmMSS, barridoAlcista, histHigh, histLow, fvgMinPips, pipSize)
+        if fvgOk
+            fvgTop := top
+            fvgBottom := bottom
+            fvgBox := box.new(left = bar_index, top = top, bottom = bottom, right = bar_index + 1,
+                 border_color = color.orange, bgcolor = color.new(color.orange, 85), extend = extend.none)
+            estado := ESTADO_ESPERANDO_ENTRADA
+
+    // Extiende visualmente el FVG mientras se espera la entrada
+    if estado == ESTADO_ESPERANDO_ENTRADA and not na(fvgBox)
+        box.set_right(fvgBox, bar_index + 1)
+
+    // --- PASO 4 y 5: entrada, stop, target, R:R y tamaño de posición ---
+    if estado == ESTADO_ESPERANDO_ENTRADA
+        disparo = f_gestionEntrada(barridoAlcista, fvgTop, fvgBottom)
+        if disparo
+            mid = (fvgTop + fvgBottom) / 2
+            stopPrice = barridoAlcista ?
+                 barridoExtremo - bufferStopPips * pipSize :
+                 barridoExtremo + bufferStopPips * pipSize
+            targetPrice = barridoAlcista ? refAlto : refBajo
+            precioEntradaRef = tipoEntrada == OPT_LIMITE ? mid : close
+            riesgoDist = math.abs(precioEntradaRef - stopPrice)
+            recompensaDist = math.abs(targetPrice - precioEntradaRef)
+            rr = riesgoDist > 0 ? recompensaDist / riesgoDist : na
+
+            if not na(rr) and rr >= minRR and dentroDeFechas and operacionesHoy < maxOperacionesDia
+                riesgoCapital = strategy.equity * (riesgoPorc / 100)
+                qty = f_calcularTamano(riesgoCapital, riesgoDist)
+                idOperacion = "JS-" + str.tostring(operacionesHoy + 1)
+                if not na(qty) and qty > 0
+                    if barridoAlcista
+                        if tipoEntrada == OPT_LIMITE
+                            strategy.entry(idOperacion, strategy.long, qty = qty, limit = mid)
+                        else
+                            strategy.entry(idOperacion, strategy.long, qty = qty)
+                    else
+                        if tipoEntrada == OPT_LIMITE
+                            strategy.entry(idOperacion, strategy.short, qty = qty, limit = mid)
+                        else
+                            strategy.entry(idOperacion, strategy.short, qty = qty)
+                    strategy.exit("Salida-" + idOperacion, from_entry = idOperacion, stop = stopPrice, limit = targetPrice)
+
+                    idPendiente := tipoEntrada == OPT_LIMITE ? idOperacion : na
+                    entryFlag := true
+
+                    lineaEntrada := line.new(bar_index, precioEntradaRef, bar_index + 1, precioEntradaRef,
+                         color = color.yellow, style = line.style_dashed, extend = extend.right)
+                    lineaStop := line.new(bar_index, stopPrice, bar_index + 1, stopPrice,
+                         color = color.red, style = line.style_dashed, extend = extend.right)
+                    lineaTP := line.new(bar_index, targetPrice, bar_index + 1, targetPrice,
+                         color = color.green, style = line.style_dashed, extend = extend.right)
+
+                    operacionesHoy := operacionesHoy + 1
+                    estado := operacionesHoy >= maxOperacionesDia ? ESTADO_FINALIZADO_DIA : ESTADO_ESPERANDO_BARRIDO
+            else
+                // No cumple R:R mínimo o ya se alcanzó el máximo diario: se descarta el setup
+                estado := ESTADO_ESPERANDO_BARRIDO
+                fvgTop := na
+                fvgBottom := na
+
+    // --- Congelar líneas de entrada/stop/TP cuando se cierra la posición ---
+    cerroPosicion = strategy.position_size == 0 and strategy.position_size[1] != 0
+    if cerroPosicion
+        if not na(lineaEntrada)
+            line.set_extend(lineaEntrada, extend.none)
+            line.set_x2(lineaEntrada, bar_index)
+        if not na(lineaStop)
+            line.set_extend(lineaStop, extend.none)
+            line.set_x2(lineaStop, bar_index)
+        if not na(lineaTP)
+            line.set_extend(lineaTP, extend.none)
+            line.set_x2(lineaTP, bar_index)
+
+// =============================================================================
+// ALERTAS
+// =============================================================================
+alertcondition(sweepFlag, title = "Barrido detectado",
+     message = "Judas Swing: barrido de liquidez detectado en {{ticker}} {{interval}}")
+alertcondition(mssFlag, title = "MSS confirmado",
+     message = "Judas Swing: Market Structure Shift confirmado en {{ticker}} {{interval}}")
+alertcondition(entryFlag, title = "Entrada ejecutada",
+     message = "Judas Swing: entrada ejecutada en {{ticker}} {{interval}}")
