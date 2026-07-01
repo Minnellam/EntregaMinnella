@@ -315,7 +315,7 @@ ESTADO_ESPERANDO_ENTRADA  = 3
 ESTADO_FINALIZADO_DIA     = 4
 
 var int estado = ESTADO_ESPERANDO_BARRIDO
-var bool barridoAlcista = na
+var bool barridoAlcista = bool(na)
 var float barridoExtremo = na          // extremo de la mecha del barrido (para el stop)
 var float pivoteRef = na               // swing point de referencia para el MSS
 var int mssIdxDesde = 0                // puntero de avance para no re-escanear el histórico
